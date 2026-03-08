@@ -1,6 +1,6 @@
 const CACHE_NAME = 'ai-blog-v1';
 const urlsToCache = [
-  './블로그 자동화.html',
+  './index.html',
   './manifest.json'
 ];
 
