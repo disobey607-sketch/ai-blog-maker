@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="AI블로그">
-    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="apple-touch-icon" href="ICON.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#fcfdfe">
 
@@ -400,24 +400,21 @@
 
     <script>
         lucide.createIcons();
-
-        let generatedMarkdown = "";
-
-        lucide.createIcons();
-
         let generatedMarkdown = "";
 
         // 반응형 레이아웃 조작 (모바일에서 설정창 이동)
         function initMobileLayout() {
             const panel = document.getElementById('settingsPanel');
             const target = document.getElementById('apiConfigMobile');
+            const sidebar = document.querySelector('aside');
+
+            if (!panel || !target || !sidebar) return;
 
             if (window.innerWidth < 1280) { // xl 브레이크포인트 미만 (모바일, 태블릿)
-                panel.classList.remove('hidden');
                 target.appendChild(panel);
+                panel.classList.replace('hidden', 'block');
             } else {
-                panel.classList.add('hidden');
-                document.querySelector('aside').appendChild(panel);
+                sidebar.appendChild(panel);
                 panel.classList.replace('hidden', 'block');
             }
         }
