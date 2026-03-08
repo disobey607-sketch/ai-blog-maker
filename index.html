@@ -440,6 +440,26 @@
                 document.getElementById('saveApiKey').checked = true;
                 document.getElementById('clearApiBtn').classList.remove('hidden');
             }
+
+            // 실시간 저장 로직 추가
+            const apiKeyInput = document.getElementById('apiKey');
+            const saveApiKeyCheckbox = document.getElementById('saveApiKey');
+            
+            saveApiKeyCheckbox.addEventListener('change', (e) => {
+                if(e.target.checked && apiKeyInput.value.trim()) {
+                    localStorage.setItem('gemini_api_key', apiKeyInput.value.trim());
+                    document.getElementById('clearApiBtn').classList.remove('hidden');
+                } else if (!e.target.checked) {
+                    localStorage.removeItem('gemini_api_key');
+                    document.getElementById('clearApiBtn').classList.add('hidden');
+                }
+            });
+
+            apiKeyInput.addEventListener('input', (e) => {
+                if(saveApiKeyCheckbox.checked) {
+                    localStorage.setItem('gemini_api_key', e.target.value.trim());
+                }
+            });
         };
 
         // API 키 삭제 기능
