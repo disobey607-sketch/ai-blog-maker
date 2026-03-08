@@ -401,21 +401,31 @@
     <script>
         lucide.createIcons();
         let generatedMarkdown = "";
+        let currentLayoutMode = '';
 
-        // 반응형 레이아웃 조작 (모바일에서 설정창 이동)
+        // 반응형 레이아웃 조작 (모바일에서 설정창 이동 및 키보드 버그 방지)
         function initMobileLayout() {
             const panel = document.getElementById('settingsPanel');
-            const target = document.getElementById('apiConfigMobile');
-            const sidebar = document.querySelector('aside');
+            const mobileTarget = document.getElementById('apiConfigMobile');
+            const desktopHeader = document.querySelector('.flex.items-center.gap-3.mb-8');
 
-            if (!panel || !target || !sidebar) return;
+            if (!panel || !mobileTarget || !desktopHeader) return;
 
-            if (window.innerWidth < 1280) { // xl 브레이크포인트 미만 (모바일, 태블릿)
-                target.appendChild(panel);
-                panel.classList.replace('hidden', 'block');
+            const isMobile = window.innerWidth < 1280;
+            const newMode = isMobile ? 'mobile' : 'desktop';
+            
+            // 키보드가 올라오면서 화면 높이가 바뀔 때 불필요하게 영역이 새로고침되어 입력창 포커스가 풀리는 현상(에러) 방지
+            if (currentLayoutMode === newMode) return; 
+            currentLayoutMode = newMode;
+
+            if (isMobile) {
+                mobileTarget.appendChild(panel);
+                panel.classList.remove('hidden');
+                panel.classList.add('block');
             } else {
-                sidebar.appendChild(panel);
-                panel.classList.replace('hidden', 'block');
+                desktopHeader.parentNode.insertBefore(panel, desktopHeader.nextSibling);
+                panel.classList.remove('block');
+                panel.classList.add('hidden');
             }
         }
 
