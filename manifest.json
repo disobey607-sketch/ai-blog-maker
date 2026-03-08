@@ -1,0 +1,16 @@
+{
+  "name": "AI 블로그 메이커",
+  "short_name": "AI블로그",
+  "description": "트렌드 반영 고수익 블로그 자동 원고 생성",
+  "start_url": "./블로그 자동화.html",
+  "display": "standalone",
+  "background_color": "#fcfdfe",
+  "theme_color": "#6366f1",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png"
+    }
+  ]
+}

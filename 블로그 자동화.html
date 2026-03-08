@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini 3 기반 고수익 블로그 생성기</title>
+
+    <!-- 아이폰 앱(PWA) 지원을 위한 메타 태그 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="AI블로그">
+    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#fcfdfe">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800&display=swap');
+
+        body {
+            font-family: 'Pretendard', sans-serif;
+            letter-spacing: -0.02em;
+        }
+
+        .prose h2 {
+            font-size: 1.75rem;
+            font-weight: 800;
+            margin-top: 3rem;
+            margin-bottom: 1.25rem;
+            color: #1e293b;
+            position: relative;
+            display: inline-block;
+        }
+
+        .prose h2::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 40px;
+            height: 4px;
+            background: #6366f1;
+            border-radius: 2px;
+        }
+
+        .prose h3 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            color: #334155;
+        }
+
+        .prose p {
+            margin-bottom: 1.5rem;
+            line-height: 1.8;
+            color: #475569;
+            font-size: 1.1rem;
+            text-align: justify;
+            letter-spacing: -0.01em;
+        }
+
+        .prose strong {
+            color: #0f172a;
+            font-weight: 700;
+            background: linear-gradient(120deg, #e0e7ff 0%, #e0e7ff 100%);
+            background-repeat: no-repeat;
+            background-size: 100% 30%;
+            background-position: 0 90%;
+        }
+
+        /* Glassmorphism & Modern UI */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+
+        .gradient-text {
+            background: linear-gradient(108deg, #4f46e5 0%, #7c3aed 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .modern-shadow {
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.05);
+        }
+
+        /* 수익화 포인트 스타일 */
+        .placeholder-box {
+            background: #fffbeb;
+            border: 2px solid #fcd34d;
+            padding: 1.25rem;
+            border-radius: 1rem;
+            color: #92400e;
+            font-weight: 700;
+            margin: 2rem 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 4px 6px -1px rgba(251, 191, 36, 0.1);
+        }
+
+        /* 차세대 이미지 프롬프트 스타일 */
+        .image-prompt-card {
+            background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+            border: 1px solid #ddd6fe;
+            padding: 1.5rem;
+            border-radius: 1.25rem;
+            margin: 2.5rem 0;
+        }
+
+        .image-prompt-label {
+            font-size: 0.75rem;
+            font-weight: 900;
+            color: #7c3aed;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .image-prompt-content {
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 0.95rem;
+            color: #4338ca;
+            background: #ffffff;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            border: 1px solid #e0e7ff;
+            line-height: 1.6;
+        }
+
+        /* 출처 섹션 스타일 */
+        .source-pill {
+            font-size: 0.75rem;
+            background: #f8fafc;
+            color: #64748b;
+            padding: 0.3rem 0.75rem;
+            border-radius: 9999px;
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin-bottom: 4px;
+        }
+
+        .source-pill:hover {
+            background: #f1f5f9;
+            border-color: #cbd5e1;
+            color: #1e293b;
+        }
+
+        @keyframes pulse-indigo {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: .5;
+            }
+        }
+
+        .loading-pulse {
+            animation: pulse-indigo 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+</head>
+
+<body class="bg-[#fcfdfe] min-h-screen text-slate-900">
+
+    <div class="flex flex-col xl:flex-row min-h-screen">
+        <!-- Sidebar -->
+        <aside
+            class="w-full xl:w-96 bg-white border-b xl:border-r border-slate-100 p-5 sm:p-8 flex-shrink-0 z-20 shadow-sm relative">
+
+            <!-- 환경설정 아코디언 토글 (모바일용) -->
+            <details
+                class="group xl:hidden mb-6 bg-slate-50/50 rounded-2xl border border-slate-100 p-4 open:bg-white open:shadow-lg transition-all">
+                <summary class="flex items-center justify-between cursor-pointer list-none font-bold text-slate-700">
+                    <span class="flex items-center gap-2"><i data-lucide="settings" class="w-4 h-4 text-indigo-500"></i>
+                        환경 설정 열기 (API 키 등)</span>
+                    <i data-lucide="chevron-down"
+                        class="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform"></i>
+                </summary>
+
+                <div class="mt-6 space-y-8 animate-fade-in">
+                    <!-- API 영역 연결 -->
+                    <div id="apiConfigMobile"></div>
+                </div>
+            </details>
+
+            <div class="flex items-center gap-3 mb-8">
+                <div
+                    class="bg-gradient-to-br from-indigo-500 to-purple-600 p-2.5 rounded-xl shadow-indigo-200 shadow-lg">
+                    <i data-lucide="pen-tool" class="text-white w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-black tracking-tighter text-slate-800 leading-none">AI 블로그 메이커
+                    </h1>
+                    <span class="text-[9px] sm:text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em]">자동 원고
+                        작성기</span>
+                </div>
+            </div>
+
+            <!-- 데스크탑에서는 항상 보이고 모바일에서는 아코디언 안으로 들어갈 설정패널 -->
+            <div id="settingsPanel" class="space-y-8 hidden xl:block">
+                <div>
+                    <label
+                        class="block text-[11px] font-black text-slate-400 uppercase mb-2 tracking-widest flex items-center gap-1">
+                        <i data-lucide="lock" class="w-3 h-3 text-indigo-500"></i> Google AI Secret Key
+                    </label>
+                    <input type="password" id="apiKey" placeholder="복사한 API 키를 여기에 입력하세요"
+                        class="w-full px-4 py-3 bg-indigo-50/30 border border-indigo-100 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all font-medium placeholder:text-slate-300">
+                    <div class="flex items-center justify-between mt-3">
+                        <label class="flex items-center gap-2 cursor-pointer group">
+                            <input type="checkbox" id="saveApiKey"
+                                class="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500">
+                            <span
+                                class="text-[11px] font-bold text-slate-500 group-hover:text-indigo-600 transition-colors">이
+                                브라우저에 키 저장하기</span>
+                        </label>
+                        <button onclick="clearApiKey()"
+                            class="text-[10px] font-bold text-rose-500 hover:text-rose-700 transition-colors uppercase tracking-widest hidden"
+                            id="clearApiBtn">지우기</button>
+                    </div>
+                    <p class="mt-2 text-[10px] text-slate-400 font-medium">Google AI Studio에서 발급받은 키를 입력해 주세요.</p>
+                </div>
+
+                <div class="p-5 bg-slate-50 rounded-2xl border border-slate-100">
+                    <label class="block text-[11px] font-black text-slate-400 uppercase mb-4 tracking-widest">블로그
+                        테마</label>
+                    <div class="grid grid-cols-1 gap-3">
+                        <label
+                            class="flex items-center gap-3 p-4 rounded-xl bg-white border border-slate-200 cursor-pointer hover:border-indigo-500 hover:shadow-md transition-all group">
+                            <input type="radio" name="topic" value="coffee" checked
+                                class="w-5 h-5 text-indigo-600 border-slate-300 focus:ring-indigo-500">
+                            <span class="text-sm font-bold text-slate-700 group-hover:text-indigo-600">☕ 커피</span>
+                        </label>
+                        <label
+                            class="flex items-center gap-3 p-4 rounded-xl bg-white border border-slate-200 cursor-pointer hover:border-indigo-500 hover:shadow-md transition-all group">
+                            <input type="radio" name="topic" value="aroma"
+                                class="w-5 h-5 text-indigo-600 border-slate-300 focus:ring-indigo-500">
+                            <span class="text-sm font-bold text-slate-700 group-hover:text-indigo-600">🌿 아로마</span>
+                        </label>
+                        <label
+                            class="flex items-center gap-3 p-4 rounded-xl bg-white border border-slate-200 cursor-pointer hover:border-indigo-500 hover:shadow-md transition-all group">
+                            <input type="radio" name="topic" value="mind"
+                                class="w-5 h-5 text-indigo-600 border-slate-300 focus:ring-indigo-500">
+                            <span class="text-sm font-bold text-slate-700 group-hover:text-indigo-600">🧠 마음</span>
+                        </label>
+                        <label
+                            class="flex items-center gap-3 p-4 rounded-xl bg-white border border-slate-200 cursor-pointer hover:border-indigo-500 hover:shadow-md transition-all group">
+                            <input type="radio" name="topic" value="daily"
+                                class="w-5 h-5 text-indigo-600 border-slate-300 focus:ring-indigo-500">
+                            <span class="text-sm font-bold text-slate-700 group-hover:text-indigo-600">📅 일상</span>
+                        </label>
+                        <label
+                            class="flex items-center gap-3 p-4 rounded-xl bg-white border border-slate-200 cursor-pointer hover:border-indigo-500 hover:shadow-md transition-all group">
+                            <input type="radio" name="topic" value="health"
+                                class="w-5 h-5 text-indigo-600 border-slate-300 focus:ring-indigo-500">
+                            <span class="text-sm font-bold text-slate-700 group-hover:text-indigo-600">🏃 건강</span>
+                        </label>
+                        <label
+                            class="flex items-center gap-3 p-4 rounded-xl bg-indigo-50 border border-indigo-200 cursor-pointer hover:border-indigo-500 hover:shadow-md transition-all group">
+                            <input type="radio" name="topic" value="sales"
+                                class="w-5 h-5 text-indigo-600 border-indigo-400 focus:ring-indigo-500">
+                            <span class="text-sm font-bold text-indigo-800 group-hover:text-indigo-600">🛍️ 상품
+                                리뷰/판매</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label
+                            class="block text-[11px] font-black text-slate-400 uppercase mb-2 tracking-widest text-indigo-600">타겟
+                            오디언스</label>
+                        <input type="text" id="audience" placeholder="예: 30대 홈카페 입문자"
+                            class="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm transition-all">
+                    </div>
+
+                    <div>
+                        <label
+                            class="block text-[11px] font-black text-slate-400 uppercase mb-2 tracking-widest text-indigo-600">브랜드
+                            보이스</label>
+                        <select id="tone"
+                            class="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm appearance-none font-medium">
+                            <option value="friendly">친근하고 편안한 동네 이웃 😊</option>
+                            <option value="editor" selected>트렌디하고 세련된 매거진 에디터 ✨</option>
+                            <option value="scholar">깊이 있고 신뢰감 주는 전문 학자 🧐</option>
+                            <option value="copywriter">소비 욕구를 자극하는 설득력 있는 카피라이터 💸</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div
+                    class="bg-gradient-to-br from-indigo-500 to-purple-600 p-5 rounded-2xl shadow-xl shadow-indigo-100 relative overflow-hidden">
+                    <div class="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
+                    <div class="flex items-center gap-3 mb-2 relative z-10">
+                        <i data-lucide="globe" class="text-white w-5 h-5"></i>
+                        <span class="text-xs font-bold text-white uppercase tracking-wider">실시간 정보 검색</span>
+                    </div>
+                    <p class="text-[11px] text-indigo-50 leading-relaxed font-medium relative z-10">
+                        구글 검색을 통해 최신 트렌드를 파악하고 글에 녹여냅니다. (우측 상단 API 키 필요)
+                    </p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-4 sm:p-8 lg:p-16 overflow-y-auto bg-slate-50/30">
+            <div class="max-w-4xl mx-auto">
+                <header class="mb-10 sm:mb-16 pt-2 sm:pt-0 text-center xl:text-left">
+                    <div
+                        class="inline-block px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-widest mb-3">
+                        Powered by AI
+                    </div>
+                    <h2
+                        class="text-3xl sm:text-4xl md:text-5xl font-black text-slate-800 mb-3 tracking-tight leading-[1.3]">
+                        자동 완성되는<br><span class="gradient-text">나만의 원고</span></h2>
+                    <p class="text-sm sm:text-lg text-slate-500 font-medium px-4 xl:px-0">키워드만 입력하면 감성적인 포스팅이 뚝딱!</p>
+                </header>
+
+                <div
+                    class="glass-panel rounded-3xl sm:rounded-[2rem] modern-shadow p-5 sm:p-10 mb-8 sm:mb-12 border-slate-200/50 bg-white">
+                    <div class="grid grid-cols-1 gap-6 sm:gap-10 mb-8 sm:mb-10">
+                        <div class="relative">
+                            <label
+                                class="absolute -top-3 left-3 sm:left-4 px-2 bg-white text-[10px] font-black text-indigo-600 uppercase tracking-tighter z-10 rounded-full">메인
+                                키워드</label>
+                            <input type="text" id="mainKeyword" placeholder="예: 봄맞이 침구 추천"
+                                class="w-full px-5 sm:px-6 py-4 sm:py-5 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 outline-none text-base sm:text-lg font-bold transition-all placeholder:text-slate-300">
+                        </div>
+                        <div class="relative">
+                            <label
+                                class="absolute -top-3 left-3 sm:left-4 px-2 bg-white text-[10px] font-black text-slate-400 uppercase tracking-tighter z-10 rounded-full">상세
+                                키워드 (선택)</label>
+                            <input type="text" id="subKeywords" placeholder="먼지없는 이불, 알러지케어 등"
+                                class="w-full px-5 sm:px-6 py-4 sm:py-5 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 outline-none text-base sm:text-lg font-bold transition-all placeholder:text-slate-300">
+                        </div>
+                    </div>
+
+                    <button id="generateBtn" onclick="handleGenerate()"
+                        class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 active:scale-[0.98] text-white font-black py-4 sm:py-5 px-6 rounded-2xl transition-transform shadow-lg shadow-indigo-200 flex items-center justify-center gap-2 sm:gap-3">
+                        <i data-lucide="sparkles" class="w-5 h-5 sm:w-6 sm:h-6"></i>
+                        <span class="text-lg sm:text-xl">원고 마법 시작하기</span>
+                    </button>
+                </div>
+
+                <!-- Status Panel -->
+                <div id="statusMessage"
+                    class="hidden mb-12 p-6 rounded-2xl text-sm font-bold shadow-sm border border-transparent flex items-center gap-4">
+                </div>
+
+                <!-- Result Content -->
+                <div id="resultContainer" class="hidden space-y-6 sm:space-y-12 pb-24">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <h3
+                            class="text-xl sm:text-2xl font-black flex items-center gap-2 sm:gap-3 text-slate-800 px-2 sm:px-0">
+                            <i data-lucide="check-circle" class="text-indigo-500 w-6 h-6 sm:w-7 sm:h-7"></i> 작성이 완료되었어요!
+                        </h3>
+                        <div class="grid grid-cols-2 sm:flex gap-3">
+                            <button onclick="copyToClipboard()"
+                                class="flex-1 flex items-center justify-center gap-2 text-[13px] sm:text-sm bg-white border border-slate-200 text-slate-600 px-4 sm:px-6 py-3.5 sm:py-3 rounded-xl active:bg-slate-50 font-bold shadow-sm">
+                                <i data-lucide="copy" class="w-4 h-4"></i> 복사하기
+                            </button>
+                            <button onclick="downloadContent()"
+                                class="flex-1 flex items-center justify-center gap-2 text-[13px] sm:text-sm bg-indigo-600 text-white px-4 sm:px-6 py-3.5 sm:py-3 rounded-xl active:bg-indigo-700 font-bold shadow-md shadow-indigo-200">
+                                <i data-lucide="download" class="w-4 h-4"></i> 저장하기
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="markdownOutput"
+                        class="bg-white border border-slate-100 rounded-[2rem] p-6 sm:p-10 lg:p-20 shadow-lg shadow-slate-200/50 prose max-w-none prose-p:text-[15px] sm:prose-p:text-[1.1rem]">
+                        <!-- Content -->
+                    </div>
+
+                    <div id="sourceContainer" class="p-6 bg-slate-50/80 rounded-2xl border border-slate-100 hidden">
+                        <div class="flex items-center gap-2 mb-3">
+                            <i data-lucide="link" class="w-4 h-4 text-slate-400"></i>
+                            <p class="text-[11px] font-bold text-slate-500 uppercase tracking-widest">참고 자료</p>
+                        </div>
+                        <div id="sourceList" class="flex flex-wrap gap-2"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        let generatedMarkdown = "";
+
+        lucide.createIcons();
+
+        let generatedMarkdown = "";
+
+        // 반응형 레이아웃 조작 (모바일에서 설정창 이동)
+        function initMobileLayout() {
+            const panel = document.getElementById('settingsPanel');
+            const target = document.getElementById('apiConfigMobile');
+
+            if (window.innerWidth < 1280) { // xl 브레이크포인트 미만 (모바일, 태블릿)
+                panel.classList.remove('hidden');
+                target.appendChild(panel);
+            } else {
+                panel.classList.add('hidden');
+                document.querySelector('aside').appendChild(panel);
+                panel.classList.replace('hidden', 'block');
+            }
+        }
+
+        // 페이지 로드 시
+        window.onload = () => {
+            initMobileLayout();
+            window.addEventListener('resize', initMobileLayout);
+
+            const savedKey = localStorage.getItem('gemini_api_key');
+            if (savedKey) {
+                document.getElementById('apiKey').value = savedKey;
+                document.getElementById('saveApiKey').checked = true;
+                document.getElementById('clearApiBtn').classList.remove('hidden');
+            }
+        };
+
+        // API 키 삭제 기능
+        function clearApiKey() {
+            localStorage.removeItem('gemini_api_key');
+            document.getElementById('apiKey').value = '';
+            document.getElementById('saveApiKey').checked = false;
+            document.getElementById('clearApiBtn').classList.add('hidden');
+            showStatus("🗑️ 저장된 API 키가 이 브라우저에서 안전하게 삭제되었습니다.", "bg-slate-50 text-slate-600 border-slate-200");
+        }
+
+        function getSystemInstruction(topic, audience, tone) {
+            let persona = "라이프스타일 에디터";
+            if (topic === 'coffee') persona = "커피 콜럼니스트이자 카페 공간 기획자";
+            else if (topic === 'aroma') persona = "아로마테라피스트이자 천연 에센셜 오일 전문가";
+            else if (topic === 'mind') persona = "심리 상담가이자 마인드풀니스(명상) 전문가";
+            else if (topic === 'daily') persona = "감각적인 일상을 공유하는 인기 크리에이터";
+            else if (topic === 'health') persona = "건강한 식습관과 루틴을 전하는 웰니스 디렉터";
+            else if (topic === 'sales') persona = "독자의 지갑을 열게 만드는 프로 리뷰어이자 커머스 전문가";
+
+            let toneInstruction = "";
+            let basePersona = persona;
+
+            if (tone === 'friendly') {
+                basePersona = `친절하고 따뜻한 이웃 같은 ${persona}`;
+                toneInstruction = `기계적이고 딱딱한 정보 전달을 피하고, 마치 카페에 마주 앉아 편안하고 다정하게 수다를 떨 듯이 글을 작성해 주세요. 전문 용어는 쉽게 풀어서 설명하고, 독자가 공감하고 미소 지을 수 있는 따뜻한 뉘앙스를 담아주세요.`;
+            } else if (tone === 'editor') {
+                basePersona = `최신 트렌드에 민감하고 감각적인 안목을 가진 ${persona}`;
+                toneInstruction = `기계적이고 딱딱한 정보 전달을 피하고, 고급 매거진이나 인기 브랜드의 컬럼처럼 세련되고 모던한 문체로 글을 작성해 주세요. 구구절절한 설명보다는 핵심을 감각적으로 짚어내어 독자가 트렌디함을 느낄 수 있도록 해주세요.`;
+            } else if (tone === 'scholar') {
+                basePersona = `해당 분야에 대한 깊은 지식과 통찰력을 지닌 ${persona} (학자적 관점)`;
+                toneInstruction = `지나치게 가벼운 농담이나 감정적인 표현은 배제하고, 객관적인 데이터와 깊이 있는 통찰을 바탕으로 신뢰감 있게 글을 작성해 주세요. 정제된 어휘를 사용하고, 논리적이고 권위 있는 학자나 전문가의 톤 앤 매너(Tone and Manner)를 유지하세요.`;
+            } else if (tone === 'copywriter') {
+                basePersona = `매출을 끌어올리는 극강의 설득력을 지닌 ${persona} (카피라이터 관점)`;
+                toneInstruction = `독자의 페인포인트(불편함)를 콕 집어주고, 왜 당장 이 제품/서비스가 필요한지 강력하게 어필하세요. 홈쇼핑의 메인 호스트나 탑 카피라이터처럼 상품의 매력을 극대화하고 강력한 구매 동기(Sales Hook)를 유발하는 설득력 있는 문체를 사용하세요.`;
+            }
+
+            return `당신은 ${basePersona}입니다. 타겟 독자는 '${audience}'입니다.
+${toneInstruction}
+검색을 통해 최신 트렌드와 정확한 정보를 파악하여 글에 반영하세요.`;
+        }
+
+        async function handleGenerate() {
+            // UI에 입력된 API 키를 가져옵니다.
+            const userApiKey = document.getElementById('apiKey').value.trim();
+            const topic = document.querySelector('input[name="topic"]:checked').value;
+            const audience = document.getElementById('audience').value || "관심 있는 이웃들";
+            const tone = document.getElementById('tone').value;
+            const mainKw = document.getElementById('mainKeyword').value;
+            const subKws = document.getElementById('subKeywords').value;
+            const btn = document.getElementById('generateBtn');
+
+            if (!userApiKey) {
+                showStatus("❌ 사이드바 상단에 Gemini API 키를 먼저 입력해 주세요.", "bg-rose-50 text-rose-700 border-rose-100");
+                return;
+            }
+
+            // API 키 저장 로직
+            const saveKeyChecked = document.getElementById('saveApiKey').checked;
+            if (saveKeyChecked) {
+                localStorage.setItem('gemini_api_key', userApiKey);
+                document.getElementById('clearApiBtn').classList.remove('hidden');
+            } else {
+                localStorage.removeItem('gemini_api_key');
+                document.getElementById('clearApiBtn').classList.add('hidden');
+            }
+
+            if (!mainKw) {
+                showStatus("⚠️ 작성할 메인 키워드를 입력해 주세요.", "bg-amber-50 text-amber-700 border-amber-100");
+                return;
+            }
+
+            // Start Loading
+            btn.disabled = true;
+            btn.innerHTML = `<div class="w-5 h-5 border-4 border-white border-t-transparent rounded-full animate-spin"></div> <span>글을 작성하는 중이에요...</span>`;
+            showStatus("✨ 인터넷을 검색해서 꼭 필요한 내용을 정리하며 글을 쓰는 중입니다. 잠시만 기다려주세요!", "bg-indigo-50 text-indigo-700 border-indigo-100 loading-pulse");
+
+            const sysInstr = getSystemInstruction(topic, audience, tone);
+            const userPrompt = `
+지금부터 내 블로그에 올릴 새 포스팅을 작성해 줘.
+
+[작성 주제]
+메인 주제: ${mainKw}
+함께 다룰 내용: ${subKws}
+
+[작성 가이드라인: 매우 중요]
+1. 제목: 글의 맨 위에 호기심을 유발하고 클릭하고 싶은 매력적인 메인 제목 하나를 작성해 줘. (H1 태그 없이 제목만 텍스트로 작성)
+2. 내용과 문체: 너는 AI가 아니라 앞서 부여받은 전문가/페르소나 캐릭터 자체야.
+   - 기계적인 요약("~에 대해 알아보겠습니다", "결론적으로", "요약하자면")은 절대 쓰지 마.
+   - "어머나", "세상에", "짜잔", "ㅎㅎ", "ㅠㅠ" 같은 억지스럽거나 가벼운 감탄사와 이모티콘 남발은 철저히 배제해. 
+   - 문맥이 물 흐르듯 논리적으로, 그리고 자연스럽게 이어지도록 가장 크게 신경 써.
+3. 소제목 구성: 가독성을 위해 중간중간 흥미로운 소제목(## 기호 사용)을 4~5개 정도 넣어 줘.
+4. 중요 단어 강조: 글을 읽다가 눈에 띄어야 할 핵심 정보나 일반 명사는 **굵게** 처리해 줘. 
+   - 단, **특정 브랜드 명칭이나 상표 이름에는 절대 굵게 표시(강조)를 하지 마.**
+5. 중간 이미지 삽입: 글의 분위기와 어울리는 사진이 들어갈 자리에 상세한 영어 프롬프트 3개를 만들어 줘. (예: [[IMAGE_PROMPT: A cozy cafe setting with warm sunlight, cinematic styling]])
+6. 자연스러운 추천(수익화): 억지스럽지 않게, 글의 흐름과 완벽히 어울리도록 내가 직접 경험한 것처럼 상품이나 서비스를 2번 정도 추천해 줘. 
+   - 양식: >>> [여기에 제품 구경가기 링크 삽입: 추천하는 제품 혹은 서비스명]
+7. 분량 및 구성: 스크롤을 내리며 넉넉하게 읽을 수 있도록 정보량을 풍부하게 채우고, 1,500자 이상으로 길게 작성해.
+8. 마무리 해시태그: 맨 아래에는 글의 내용과 어울리는 해시태그 10개 정도를 달아 줘.
+`;
+
+            // 사용 가능한 최신 모델인 gemini-2.5-flash로 변경합니다.
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${userApiKey}`;
+
+            const fetchWithRetry = async (url, options, maxRetries = 5) => {
+                let delay = 1000;
+                for (let i = 0; i < maxRetries; i++) {
+                    try {
+                        const response = await fetch(url, options);
+                        if (response.ok) return await response.json();
+
+                        const errorData = await response.json().catch(() => ({}));
+                        if (response.status === 429 || response.status >= 500) {
+                            // 재시도 대상 오류
+                        } else {
+                            throw new Error(errorData.error?.message || "서버 응답 오류");
+                        }
+                    } catch (err) {
+                        if (i === maxRetries - 1) throw err;
+                    }
+                    await new Promise(res => setTimeout(res, delay));
+                    delay *= 2;
+                }
+                throw new Error("최대 재시도 횟수를 초과했습니다.");
+            };
+
+            try {
+                const data = await fetchWithRetry(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: userPrompt }] }],
+                        systemInstruction: { parts: [{ text: sysInstr }] },
+                        tools: [{ "googleSearch": {} }] // google_search가 아닌 googleSearch가 올바른 API 파라미터입니다.
+                    })
+                });
+
+                if (!data.candidates || data.candidates.length === 0) {
+                    throw new Error("AI가 결과물을 생성하지 못했습니다. 키를 확인해 주세요.");
+                }
+
+                const cand = data.candidates[0];
+                const resText = cand.content.parts[0].text;
+                generatedMarkdown = resText;
+
+                // 마크다운 렌더링
+                let finalHtml = marked.parse(resText);
+
+                // 수익화 디자인
+                finalHtml = finalHtml.replace(/&gt;&gt;&gt; \[(.*?)\]/g, '<div class="placeholder-box"><i data-lucide="shopping-bag" class="w-5 h-5"></i> 수익화 포인트: $1</div>');
+
+                // 이미지 카드 디자인
+                finalHtml = finalHtml.replace(/\[\[IMAGE_PROMPT: (.*?)\]\]/g, `
+                    <div class="image-prompt-card">
+                        <div class="image-prompt-label"><i data-lucide="camera" class="w-4 h-4"></i> AI IMAGE PROMPT</div>
+                        <div class="image-prompt-content">$1</div>
+                    </div>
+                `);
+
+                document.getElementById('markdownOutput').innerHTML = finalHtml;
+
+                // 출처 표시
+                const sList = document.getElementById('sourceList');
+                const grounding = cand.groundingMetadata?.groundingAttributions;
+                if (grounding && grounding.length > 0) {
+                    sList.innerHTML = grounding.map(s => `
+                        <a href="${s.web?.uri}" target="_blank" class="source-pill">
+                            <i data-lucide="link-2" class="w-3 h-3"></i> ${s.web?.title || '검색 출처'}
+                        </a>
+                    `).join('');
+                    document.getElementById('sourceContainer').classList.remove('hidden');
+                } else {
+                    document.getElementById('sourceContainer').classList.add('hidden');
+                }
+
+                document.getElementById('resultContainer').classList.remove('hidden');
+                showStatus("✅ 최신 트렌드가 반영된 원고가 성공적으로 생성되었습니다.", "bg-emerald-50 text-emerald-700 border-emerald-200");
+
+            } catch (err) {
+                console.error(err);
+                showStatus(`❌ 오류 발생: ${err.message}. API 키가 유효한지 확인해 주세요.`, "bg-rose-50 text-rose-800 border-rose-200");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i data-lucide="flame" class="w-6 h-6"></i><span class="text-xl">AI 트렌드 원고 생성 시작</span>`;
+                lucide.createIcons();
+                window.scrollTo({ top: document.getElementById('resultContainer').offsetTop - 50, behavior: 'smooth' });
+            }
+        }
+
+        function showStatus(msg, classes) {
+            const status = document.getElementById('statusMessage');
+            status.className = `mb-6 sm:mb-12 p-4 sm:p-6 rounded-2xl text-[13px] sm:text-sm font-bold shadow-sm border flex items-start sm:items-center gap-3 sm:gap-4 ${classes} break-keep`;
+            status.innerHTML = `<i data-lucide="info" class="w-5 h-5 flex-shrink-0 mt-0.5 sm:mt-0"></i> <span class="leading-relaxed">${msg}</span>`;
+            status.classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function copyToClipboard() {
+            const el = document.createElement('textarea');
+            el.value = generatedMarkdown;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            alert("원고가 복사되었습니다!");
+        }
+
+        function downloadContent() {
+            if (!generatedMarkdown) return;
+            const blob = new Blob([generatedMarkdown], { type: 'text/markdown' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Gemini_Blog_Post_${new Date().getTime()}.md`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+    </script>
+
+    <!-- PWA 오프라인 및 설치 지원을 위한 Service Worker -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('ServiceWorker 등록 완료 (아이폰 앱 설치 준비됨)'))
+                    .catch(e => console.log('ServiceWorker 등록 실패', e));
+            });
+        }
+    </script>
+</body>
+
+</html>
